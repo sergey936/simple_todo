@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "simple-todo"
+version = "0.1.0"
+description = ""
+authors = ["sergey936 <s.suslakov@yandex.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.111.0"
+pytest = "^8.2.2"
+faker = "^25.8.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

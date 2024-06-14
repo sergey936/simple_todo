@@ -10,6 +10,7 @@ python = "^3.12"
 fastapi = "^0.111.0"
 pytest = "^8.2.2"
 faker = "^25.8.0"
+punq = "^0.7.0"
 
 
 [build-system]

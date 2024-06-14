@@ -1,12 +1,10 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Any, Generic
 
-from logic.mediator.mediator import Mediator
 
-
-@dataclass
-class BaseQuery(ABC):
+@dataclass(frozen=True)
+class BaseQuery:
     ...
 
 
@@ -14,9 +12,9 @@ QT = TypeVar('QT', bound=BaseQuery)
 QR = TypeVar('QR', bound=Any)
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseQueryHandler(ABC, Generic[QT, QR]):
-    _mediator: Mediator
 
+    @abstractmethod
     async def handle(self, query: QT) -> QR:
         ...

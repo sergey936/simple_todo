@@ -1,30 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from punq import Container
 
+from application.api.users.schemas import UserDetailSchema, ErrorSchema
 from domain.exceptions.base import ApplicationException
 from logic.commands.users import CreateUserCommand
-from logic.init import init_container
+from logic.init import get_container
 from logic.mediator.base import Mediator
 
 router = APIRouter(tags=['user'])
 
 
-@router.get('/test')
-async def register():
-    return {'response': 'working'}
-
-
-@router.post('/register')
+@router.post(
+    '/register',
+    response_model=UserDetailSchema,
+    status_code=status.HTTP_201_CREATED,
+    description='Creating new user, if user already exists, then return 400 error',
+    responses={
+        status.HTTP_201_CREATED: {'model': UserDetailSchema},
+        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema}
+    }
+)
 async def register(
         password: str,
         email: str,
         username: str,
-        container: Container = Depends(init_container)
-):
+        container: Container = Depends(get_container)
+) -> UserDetailSchema:
+    """ Create new user """
     mediator = container.resolve(Mediator)
 
     try:
-        new_user = await mediator.handle_command(
+        new_user, *_ = await mediator.handle_command(
             CreateUserCommand(
                 password=password,
                 email=email,
@@ -34,4 +40,4 @@ async def register(
     except ApplicationException as error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={'error': error.message})
 
-    return new_user
+    return UserDetailSchema.from_entity(new_user)

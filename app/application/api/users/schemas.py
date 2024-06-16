@@ -19,4 +19,3 @@ class UserDetailSchema(BaseModel):
             username=user.username.as_generic_type(),
             email=user.email.as_generic_type()
         )
-

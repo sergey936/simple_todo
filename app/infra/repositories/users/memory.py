@@ -27,3 +27,9 @@ class MemoryUserRepository(BaseUserRepository):
     async def register_user(self, new_user: User) -> None:
         self._saved_users.append(new_user)
 
+    async def get_user_by_email(self, email: str) -> User | None:
+        for user in self._saved_users:
+            if user.email.as_generic_type() == email:
+                return user
+        return None
+

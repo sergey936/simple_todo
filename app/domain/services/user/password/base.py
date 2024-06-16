@@ -5,11 +5,11 @@ from domain.values.users import Password
 
 
 @dataclass
-class BasePasswordHasher(ABC):
+class BasePasswordManager(ABC):
     @abstractmethod
-    def hash_password(self, raw_password: str) -> Password:
+    def hash_password(self, raw_password: str) -> str:
         ...
 
     @abstractmethod
-    def verify_password(self, raw_password: str, hashed_password: Password) -> bool:
+    def verify_password(self, raw_password: str, hashed_password: str) -> bool:
         ...

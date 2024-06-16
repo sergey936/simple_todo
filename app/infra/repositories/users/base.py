@@ -18,3 +18,7 @@ class BaseUserRepository(ABC):
     @abstractmethod
     async def check_user_by_email(self, email: str) -> bool:
         ...
+
+    @abstractmethod
+    async def get_user_by_email(self, email: str) -> User | None:
+        ...

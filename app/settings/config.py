@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Config(BaseSettings):
-    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+    oauth2_scheme: OAuth2PasswordBearer = OAuth2PasswordBearer(tokenUrl="/users/token")
 
     secret_key: str = Field(default='', alias='SECRET_KEY')
     algorithm: str = Field(default='', alias='ALGORITHM')

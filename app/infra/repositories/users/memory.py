@@ -19,7 +19,7 @@ class MemoryUserRepository(BaseUserRepository):
         except StopIteration:
             return False
 
-    async def get_user(self, user_oid: str) -> User:
+    async def get_user_by_oid(self, user_oid: str) -> User:
         for user in self._saved_users:
             if user.oid == user_oid:
                 return user

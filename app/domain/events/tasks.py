@@ -12,4 +12,5 @@ class NewTaskCreatedEvent(BaseEvent):
     task_oid: str
     title: Title
     importance: Importance
+    user_oid: str
 

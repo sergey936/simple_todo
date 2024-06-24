@@ -8,7 +8,7 @@ from domain.entities.users import User
 class BaseUserRepository(ABC):
 
     @abstractmethod
-    async def get_user(self, user_oid: str) -> User:
+    async def get_user_by_oid(self, user_oid: str) -> User | None:
         ...
 
     @abstractmethod

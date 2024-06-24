@@ -1,13 +1,24 @@
 from functools import lru_cache
+
 from punq import Container, Scope
+
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+
 
 from domain.services.user.password.base import BasePasswordManager
 from domain.services.user.password.password import PasswordManager
+from infra.db.manager.postgre import PostgresDatabaseManager
 from infra.repositories.users.base import BaseUserRepository
-from infra.repositories.users.memory import MemoryUserRepository
-from logic.commands.users import CreateUserCommand, CreateUserCommandHandler, AuthenticateUserCommandHandler, \
-    AuthenticateUserCommand, CreateAccessTokenCommandHandler, CreateAccessTokenCommand, GetCurrentUserCommandHandler, \
-    GetCurrentUserCommand
+
+from infra.repositories.users.postgres import PostgresUserRepository
+from logic.commands.auth import (
+    CreateAccessTokenCommandHandler, AuthenticateUserCommand,
+    AuthenticateUserCommandHandler, CreateAccessTokenCommand
+)
+from logic.commands.users import (
+    CreateUserCommand, CreateUserCommandHandler, GetCurrentUserCommand,
+    GetUserByEmailHandler, GetUserByEmail, GetCurrentUserCommandHandler
+)
 from logic.mediator.base import Mediator
 from settings.config import Config
 
@@ -17,6 +28,10 @@ def get_container() -> Container:
     return init_container()
 
 
+class BaseDatabaseManger:
+    pass
+
+
 def init_container() -> Container:
     container = Container()
 
@@ -24,7 +39,26 @@ def init_container() -> Container:
     container.register(Config, instance=Config(), scope=Scope.singleton)
 
     # register Repositories
-    container.register(BaseUserRepository, instance=MemoryUserRepository(), scope=Scope.singleton)
+    def init_postgres_database_manager() -> BaseDatabaseManger:
+        config: Config = container.resolve(Config)
+        engine = create_async_engine(config.database_url, echo=True, future=True)
+
+        return PostgresDatabaseManager(
+            _session_maker=async_sessionmaker(
+                engine,
+                class_=AsyncSession,
+                expire_on_commit=False
+            )
+        )
+
+    container.register(BaseDatabaseManger, factory=init_postgres_database_manager, scope=Scope.singleton)
+
+    def init_postgres_user_repository() -> BaseUserRepository:
+        return PostgresUserRepository(
+            _database_manager=container.resolve(BaseDatabaseManger)
+        )
+
+    container.register(BaseUserRepository, factory=init_postgres_user_repository, scope=Scope.singleton)
 
     # register password hasher
     container.register(BasePasswordManager, instance=PasswordManager(), scope=Scope.singleton)
@@ -53,6 +87,10 @@ def init_container() -> Container:
             user_repository=container.resolve(BaseUserRepository),
             config=container.resolve(Config)
         )
+        get_user_by_email_command_handler = GetUserByEmailHandler(
+            _mediator=mediator,
+            user_repository=container.resolve(BaseUserRepository)
+        )
 
         # register handlers for commands
         mediator.register_command(
@@ -71,10 +109,13 @@ def init_container() -> Container:
             GetCurrentUserCommand,
             [get_current_user_command_handler]
         )
+        mediator.register_command(
+            GetUserByEmail,
+            [get_user_by_email_command_handler]
+        )
 
         return mediator
 
     container.register(Mediator, factory=init_mediator, scope=Scope.singleton)
 
     return container
-

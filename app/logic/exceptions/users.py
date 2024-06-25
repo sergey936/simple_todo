@@ -21,12 +21,21 @@ class WrongPasswordException(LogicException):
 
 
 @dataclass
-class UserNotFoundException(LogicException):
+class UserNotFoundByIdException(LogicException):
     user_oid: str
 
     @property
     def message(self):
         return f"User with oid: {self.user_oid} not found"
+
+
+@dataclass
+class UserNotFoundByEmailException(LogicException):
+    email: str
+
+    @property
+    def message(self):
+        return f"User with email: {self.email} not found"
 
 
 @dataclass

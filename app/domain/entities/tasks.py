@@ -11,6 +11,7 @@ class Task(BaseEntity):
     task_body: TaskBody
     importance: Importance
     user_oid: str
+    is_completed: bool = False
 
     @classmethod
     def create_task(

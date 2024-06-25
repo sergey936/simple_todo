@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import String, text, Integer, ForeignKey
+from sqlalchemy import String, text, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infra.db.models.base import Base
@@ -17,7 +17,6 @@ class Tasks(Base):
 
     user_id: Mapped[str] = mapped_column(ForeignKey("Users.id"))
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
+    is_completed: Mapped[bool] = mapped_column(Boolean())
 
-    user: Mapped["Users"] = relationship(
-        back_populates='task'
-    )
+    user: Mapped["Users"] = relationship("Users", back_populates="task")

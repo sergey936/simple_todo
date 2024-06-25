@@ -22,3 +22,7 @@ class BaseUserRepository(ABC):
     @abstractmethod
     async def get_user_by_email(self, email: str) -> User | None:
         ...
+
+    @abstractmethod
+    async def delete_user(self, user_oid: str) -> None:
+        ...

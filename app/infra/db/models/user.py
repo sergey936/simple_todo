@@ -1,9 +1,11 @@
 import datetime
+from typing import List
 
 from sqlalchemy import String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infra.db.models.base import Base
+from infra.db.models.task import Tasks
 
 
 class Users(Base):
@@ -15,8 +17,6 @@ class Users(Base):
     email: Mapped[str] = mapped_column(String(256))
     password: Mapped[str] = mapped_column(String())
 
-    created_at: Mapped[datetime.datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
+    created_at: Mapped[datetime.datetime] = mapped_column()
 
-    task: Mapped[list["Tasks"]] = relationship(
-        back_populates='user'
-    )
+    task: Mapped[List["Tasks"]] = relationship("Tasks", back_populates="user")

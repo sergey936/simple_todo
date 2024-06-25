@@ -20,3 +20,12 @@ class UserDetailSchema(BaseModel):
             email=user.email.as_generic_type()
         )
 
+
+class UserDeleteSchema(BaseModel):
+    response: str = 'User deleted'
+
+
+class CreateUserSchema(BaseModel):
+    password: str
+    email: str
+    username: str

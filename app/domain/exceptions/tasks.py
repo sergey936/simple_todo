@@ -52,3 +52,4 @@ class EmptyImportanceException(ApplicationException):
     @property
     def message(self):
         return "Importance cannot be empty"
+

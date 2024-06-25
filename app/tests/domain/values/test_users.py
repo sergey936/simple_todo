@@ -39,18 +39,6 @@ def test_create_user_empty_username():
         username = Username('')
 
 
-def test_create_user_password_too_long(faker: Faker):
-    with pytest.raises(PasswordTooLongException):
-        password = faker.text(max_nb_chars=333)
-        Password(password)
-
-
-def test_create_user_password_too_short(faker: Faker):
-    with pytest.raises(PasswordTooSmallException):
-        password = faker.text(max_nb_chars=8)
-        Password(password)
-
-
 def test_create_user_empty_password():
     with pytest.raises(EmptyPasswordException):
         Password('')

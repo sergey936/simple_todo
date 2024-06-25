@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 
 from domain.entities.users import User
-from domain.values.users import Email, Password, Username
 from infra.repositories.users.base import BaseUserRepository
 
 
@@ -12,15 +11,25 @@ class MemoryUserRepository(BaseUserRepository):
         kw_only=True
     )
 
-    async def get_user(self, user_oid: str) -> User:
+    async def check_user_by_email(self, email: str) -> bool:
+        try:
+            return bool(next(
+                user for user in self._saved_users if user.email.as_generic_type() == email
+            ))
+        except StopIteration:
+            return False
+
+    async def get_user_by_oid(self, user_oid: str) -> User:
         for user in self._saved_users:
             if user.oid == user_oid:
                 return user
 
-    async def register_user(self, username: Username, email: Email, password: Password) -> User:
-        user = User(
-            username=username,
-            email=email,
-            password=password
-        )
-        self._saved_users.append(user)
+    async def register_user(self, new_user: User) -> None:
+        self._saved_users.append(new_user)
+
+    async def get_user_by_email(self, email: str) -> User | None:
+        for user in self._saved_users:
+            if user.email.as_generic_type() == email:
+                return user
+        return None
+

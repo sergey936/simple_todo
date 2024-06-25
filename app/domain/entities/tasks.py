@@ -10,24 +10,31 @@ class Task(BaseEntity):
     title: Title
     task_body: TaskBody
     importance: Importance
+    user_oid: str
+    is_completed: bool = False
 
+    @classmethod
     def create_task(
-            self,
+            cls,
             title: Title,
             task_body: TaskBody,
-            importance: Importance
+            importance: Importance,
+            user_oid: str
     ) -> 'Task':
+
         new_task = Task(
             title=title,
             task_body=task_body,
-            importance=importance
+            importance=importance,
+            user_oid=user_oid
         )
 
         new_task.register_event(
             NewTaskCreatedEvent(
                 task_oid=new_task.oid,
                 title=title,
-                importance=importance
+                importance=importance,
+                user_oid=user_oid
             )
         )
 

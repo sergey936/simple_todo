@@ -37,8 +37,8 @@ class Importance(BaseValueObject):
         if not self.value:
             raise EmptyImportanceException
 
-        if not 0 < self.value <= 10:
+        if not 0 < int(self.value) <= 10:
             raise InvalidImportanceException(self.value)
 
     def as_generic_type(self):
-        return str(self.value)
+        return int(self.value)

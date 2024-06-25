@@ -5,6 +5,7 @@ ENV = --env-file .env
 APP_FILE = docker_compose/app.yaml
 APP_CONTAINER = todo-app
 
+
 .PHONY: app
 app:
 	${DC} -f ${APP_FILE} ${ENV} up --build -d
@@ -16,3 +17,5 @@ app-logs:
 .PHONY: app-down
 app-down:
 	${DC} -f ${APP_FILE} down
+
+

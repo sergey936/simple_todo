@@ -12,24 +12,6 @@ class EmptyPasswordException(ApplicationException):
 
 
 @dataclass(eq=False)
-class PasswordTooSmallException(ApplicationException):
-    text: str
-
-    @property
-    def message(self):
-        return 'Password too small'
-
-
-@dataclass(eq=False)
-class PasswordTooLongException(ApplicationException):
-    text: str
-
-    @property
-    def message(self):
-        return 'Password too long'
-
-
-@dataclass(eq=False)
 class EmptyUsernameException(ApplicationException):
 
     @property

@@ -1,22 +1,22 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Any, Generic
-
-from logic.mediator.mediator import Mediator
+from typing import Any, Generic, TypeVar
 
 
-@dataclass
-class BaseEvent(ABC):
-    ...
-
+from domain.events.base import BaseEvent
 
 ET = TypeVar('ET', bound=BaseEvent)
 ER = TypeVar('ER', bound=Any)
 
 
+@dataclass(frozen=True)
+class IntegrationEvent(BaseEvent, ABC):
+    ...
+
+
 @dataclass
 class BaseEventHandler(ABC, Generic[ET, ER]):
-    _mediator: Mediator
 
-    async def handle(self, event: ET) -> ER:
+    @abstractmethod
+    def handle(self, event: ET) -> ER:
         ...

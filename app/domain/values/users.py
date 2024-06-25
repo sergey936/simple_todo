@@ -1,8 +1,9 @@
+import hashlib
 from dataclasses import dataclass
 
 from domain.exceptions.users import (
-    PasswordTooSmallException, EmptyUsernameException, InvalidEmailException,
-    PasswordTooLongException, EmptyPasswordException, UsernameTooLongException,
+    EmptyUsernameException, InvalidEmailException,
+    EmptyPasswordException, UsernameTooLongException,
     EmailTooSmallException, EmailTooLongException, EmptyEmailException
 )
 from domain.values.base import BaseValueObject
@@ -10,15 +11,10 @@ from domain.values.base import BaseValueObject
 
 @dataclass(frozen=True)
 class Password(BaseValueObject):
+
     def validate(self) -> None:
         if not self.value:
             raise EmptyPasswordException()
-
-        if len(self.value) < 8:
-            raise PasswordTooSmallException(self.value)
-
-        if len(self.value) > 50:
-            raise PasswordTooLongException(self.value)
 
     def as_generic_type(self):
         return str(self.value)
@@ -54,4 +50,3 @@ class Email(BaseValueObject):
 
     def as_generic_type(self):
         return str(self.value)
-

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Iterable
 
-from sqlalchemy import select
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from application.api.tasks.filters import GetTasksFilters
@@ -20,8 +20,18 @@ class PostgresTaskRepository(BaseTaskRepository):
     async def get_session(self) -> async_sessionmaker:
         return await self._database_manager.get_sessionmaker()
 
-    async def get_task_by_oid(self, task_oid: str) -> Task:
-        ...
+    async def get_task_by_oid(self, task_oid: str) -> Task | None:
+        session = await self.get_session
+
+        async with session.begin() as session:
+            query = select(Tasks).where(Tasks.id == task_oid)
+            result = await session.execute(query)
+            task = result.scalars().one_or_none()
+
+            if not task:
+                return None
+
+            return convert_task_db_model_to_entity(task=task)
 
     async def create_task(self, task: Task) -> None:
         session = await self.get_session
@@ -54,4 +64,18 @@ class PostgresTaskRepository(BaseTaskRepository):
             return [convert_task_db_model_to_entity(task=task) for task in tasks]
 
     async def delete_task(self, task_oid: str) -> None:
-        ...
+        session = await self.get_session
+
+        async with session.begin() as session:
+            query = delete(Tasks).where(Tasks.id == task_oid)
+            await session.execute(query)
+            await session.commit()
+
+    async def complete_user_task(self, task_oid: str, user_oid: str) -> None:
+        session = await self.get_session
+
+        async with session.begin() as session:
+            query = update(Tasks).where(Tasks.id == task_oid, Tasks.user_id == user_oid).values(is_completed=True)
+            await session.execute(query)
+            await session.commit()
+

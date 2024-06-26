@@ -17,9 +17,13 @@ class BaseTaskRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_task_by_oid(self, task_oid: str) -> Task:
+    async def get_task_by_oid(self, task_oid: str) -> Task | None:
         ...
 
     @abstractmethod
     async def delete_task(self, task_oid: str) -> None:
+        ...
+
+    @abstractmethod
+    async def complete_user_task(self, task_oid: str, user_oid: str) -> None:
         ...

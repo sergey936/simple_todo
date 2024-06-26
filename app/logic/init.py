@@ -18,13 +18,16 @@ from logic.commands.auth import (
     CreateAccessTokenCommandHandler, AuthenticateUserCommand,
     AuthenticateUserCommandHandler, CreateAccessTokenCommand
 )
-from logic.commands.tasks import CreateTaskCommand, CreateTaskCommandHandler
+from logic.commands.tasks import CreateTaskCommand, CreateTaskCommandHandler, DeleteTaskCommandHandler, \
+    DeleteTaskCommand, CompleteTaskCommandHandler, CompleteTaskCommand
 from logic.commands.users import (
-    CreateUserCommand, CreateUserCommandHandler, GetCurrentUserCommand,
-    GetUserByEmailHandler, GetUserByEmail, GetCurrentUserCommandHandler, DeleteUserCommandHandler, DeleteUserCommand
+    CreateUserCommand, CreateUserCommandHandler, DeleteUserCommandHandler, DeleteUserCommand
 )
 from logic.mediator.base import Mediator
-from logic.queries.tasks import GetAllUserTasksQueryHandler, GetAllUserTasksQuery
+from logic.queries.tasks import GetAllUserTasksQueryHandler, GetAllUserTasksQuery, GetUserTaskByOidQuery, \
+    GetUserTaskByOidQueryHandler
+from logic.queries.users import GetUserByEmailQueryHandler, GetCurrentUserQueryHandler, GetCurrentUserQuery, \
+    GetUserByEmailQuery
 from settings.config import Config
 
 
@@ -90,15 +93,6 @@ def init_container() -> Container:
             _mediator=mediator,
             config=container.resolve(Config)
         )
-        get_current_user_command_handler = GetCurrentUserCommandHandler(
-            _mediator=mediator,
-            user_repository=container.resolve(BaseUserRepository),
-            config=container.resolve(Config)
-        )
-        get_user_by_email_command_handler = GetUserByEmailHandler(
-            _mediator=mediator,
-            user_repository=container.resolve(BaseUserRepository)
-        )
         delete_user_command_handler = DeleteUserCommandHandler(
             _mediator=mediator,
             user_repository=container.resolve(BaseUserRepository)
@@ -108,12 +102,33 @@ def init_container() -> Container:
             _mediator=mediator,
             task_repository=container.resolve(BaseTaskRepository),
             user_repository=container.resolve(BaseUserRepository)
-
+        )
+        delete_user_task_command_handler = DeleteTaskCommandHandler(
+            _mediator=mediator,
+            task_repository=container.resolve(BaseTaskRepository),
+            user_repository=container.resolve(BaseUserRepository)
+        )
+        complete_user_task_command_handler = CompleteTaskCommandHandler(
+            _mediator=mediator,
+            task_repository=container.resolve(BaseTaskRepository),
+            user_repository=container.resolve(BaseUserRepository)
         )
 
         # initialize handlers for queries
+        # Users
+        get_current_user_query_handler = GetCurrentUserQueryHandler(
+            user_repository=container.resolve(BaseUserRepository),
+            config=container.resolve(Config)
+        )
+        get_user_by_email_query_handler = GetUserByEmailQueryHandler(
+            user_repository=container.resolve(BaseUserRepository)
+        )
         # Tasks
         get_all_user_tasks_query_handler = GetAllUserTasksQueryHandler(
+            task_repository=container.resolve(BaseTaskRepository),
+            user_repository=container.resolve(BaseUserRepository)
+        )
+        get_user_task_by_oid_query_handler = GetUserTaskByOidQueryHandler(
             task_repository=container.resolve(BaseTaskRepository),
             user_repository=container.resolve(BaseUserRepository)
         )
@@ -133,14 +148,6 @@ def init_container() -> Container:
             [create_access_token_command_handler]
         )
         mediator.register_command(
-            GetCurrentUserCommand,
-            [get_current_user_command_handler]
-        )
-        mediator.register_command(
-            GetUserByEmail,
-            [get_user_by_email_command_handler]
-        )
-        mediator.register_command(
             DeleteUserCommand,
             [delete_user_command_handler]
         )
@@ -149,12 +156,33 @@ def init_container() -> Container:
             CreateTaskCommand,
             [create_task_command_handler]
         )
+        mediator.register_command(
+            DeleteTaskCommand,
+            [delete_user_task_command_handler]
+        )
+        mediator.register_command(
+            CompleteTaskCommand,
+            [complete_user_task_command_handler]
+        )
 
         # register handlers for queries
+        # Users
+        mediator.register_query(
+            GetCurrentUserQuery,
+            get_current_user_query_handler
+        )
+        mediator.register_query(
+            GetUserByEmailQuery,
+            get_user_by_email_query_handler
+        )
         # Tasks
         mediator.register_query(
             GetAllUserTasksQuery,
             get_all_user_tasks_query_handler
+        )
+        mediator.register_query(
+            GetUserTaskByOidQuery,
+            get_user_task_by_oid_query_handler
         )
 
         return mediator

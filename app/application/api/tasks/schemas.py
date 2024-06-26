@@ -36,7 +36,11 @@ class GetTasksQueryResponseSchema(BaseQueryResponseSchema[list[TaskDetailSchema]
     ...
 
 
+class DeleteTaskSchema(BaseModel):
+    response: str = 'Task deleted'
 
 
+class CompleteTaskSchema(BaseModel):
+    response: str = 'Task completed'
 
 

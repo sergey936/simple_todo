@@ -3,14 +3,13 @@ from fastapi.security import OAuth2PasswordBearer
 from punq import Container
 
 
-from application.api.users.schemas import UserDetailSchema
 from domain.entities.users import User
 from domain.exceptions.base import ApplicationException
-from logic.commands.users import GetCurrentUserCommand
 from logic.init import get_container
 from logic.mediator.base import Mediator
+from logic.queries.users import GetCurrentUserQuery
 
-oauth2_scheme = (OAuth2PasswordBearer(tokenUrl="/auth/token"))
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 async def get_current_user(
@@ -20,8 +19,8 @@ async def get_current_user(
     mediator: Mediator = container.resolve(Mediator)
 
     try:
-        user, *_ = await mediator.handle_command(
-            GetCurrentUserCommand(
+        user = await mediator.handle_query(
+            GetCurrentUserQuery(
                 token=token
             )
         )

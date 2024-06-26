@@ -1,9 +1,4 @@
-import jwt
-
 from dataclasses import dataclass
-
-from fastapi import HTTPException, status
-from jwt import InvalidTokenError
 
 from domain.entities.users import User
 from domain.services.user.password.base import BasePasswordManager
@@ -13,7 +8,6 @@ from infra.repositories.converters.users.converters import convert_user_entity_t
 from infra.repositories.users.base import BaseUserRepository
 from logic.commands.base import BaseCommand, BaseCommandHandler
 from logic.exceptions.users import UserWithThatEmailAlreadyExists, UserNotFoundByEmailException
-from settings.config import Config
 
 
 @dataclass(frozen=True)
@@ -45,58 +39,6 @@ class CreateUserCommandHandler(BaseCommandHandler):
         await self.user_repository.register_user(new_user=convert_user_entity_to_dbmodel(user=new_user))
 
         return new_user
-
-
-@dataclass(frozen=True)
-class GetCurrentUserCommand(BaseCommand):
-    token: str
-
-
-@dataclass(frozen=True)
-class GetCurrentUserCommandHandler(BaseCommandHandler):
-    user_repository: BaseUserRepository
-    config: Config
-
-    async def handle(self, command: GetCurrentUserCommand) -> User:
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        try:
-            payload = jwt.decode(command.token, self.config.secret_key, algorithms=[self.config.algorithm])
-            email: str = payload.get("email")
-
-            if not email:
-                raise credentials_exception
-
-        except InvalidTokenError:
-            raise credentials_exception
-
-        user = await self.user_repository.get_user_by_email(email=email)
-
-        if not user:
-            raise credentials_exception
-
-        return user
-
-
-@dataclass(frozen=True)
-class GetUserByEmail(BaseCommand):
-    email: str
-
-
-@dataclass(frozen=True)
-class GetUserByEmailHandler(BaseCommandHandler):
-    user_repository: BaseUserRepository
-
-    async def handle(self, command: GetUserByEmail) -> User:
-        user = await self.user_repository.get_user_by_email(email=command.email)
-
-        if not user:
-            raise UserNotFoundByEmailException(email=user.email)
-
-        return user
 
 
 @dataclass(frozen=True)

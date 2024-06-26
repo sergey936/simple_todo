@@ -21,10 +21,26 @@ class TaskAccessDeniedException(LogicException):
 
 
 @dataclass
-class GetAllTasksAccessDenied(LogicException):
+class GetTasksAccessDenied(LogicException):
 
     @property
     def message(self):
         return "Access denied. You cant read other users tasks."
 
+
+@dataclass
+class UsersTasksNotFoundException(LogicException):
+
+    @property
+    def message(self):
+        return "User dont have any task."
+
+
+@dataclass
+class UserTaskNotFound(LogicException):
+    task_oid: str
+
+    @property
+    def message(self):
+        return f"Task with oid: {self.task_oid} not found."
 

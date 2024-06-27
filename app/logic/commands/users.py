@@ -38,6 +38,8 @@ class CreateUserCommandHandler(BaseCommandHandler):
 
         await self.user_repository.register_user(new_user=convert_user_entity_to_dbmodel(user=new_user))
 
+        await self._mediator.publish(new_user.pull_events())
+
         return new_user
 
 

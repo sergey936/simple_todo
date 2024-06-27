@@ -4,11 +4,13 @@ from punq import Container, Scope
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
-
+from domain.events.users import NewUserCreatedEvent
 from domain.services.user.password.base import BasePasswordManager
 from domain.services.user.password.password import PasswordManager
 from infra.db.manager.base import BaseDatabaseManager
 from infra.db.manager.postgre import PostgresDatabaseManager
+from infra.notificators.base import BaseNotificator
+from infra.notificators.email import EmailNotificator
 from infra.repositories.tasks.base import BaseTaskRepository
 from infra.repositories.tasks.postgres import PostgresTaskRepository
 from infra.repositories.users.base import BaseUserRepository
@@ -23,6 +25,7 @@ from logic.commands.tasks import CreateTaskCommand, CreateTaskCommandHandler, De
 from logic.commands.users import (
     CreateUserCommand, CreateUserCommandHandler, DeleteUserCommandHandler, DeleteUserCommand
 )
+from logic.events.users import NewUserCreatedEventHandler
 from logic.mediator.base import Mediator
 from logic.queries.tasks import GetAllUserTasksQueryHandler, GetAllUserTasksQuery, GetUserTaskByOidQuery, \
     GetUserTaskByOidQueryHandler
@@ -41,10 +44,21 @@ def init_container() -> Container:
 
     # register Config
     container.register(Config, instance=Config(), scope=Scope.singleton)
+    config: Config = container.resolve(Config)
+
+    # register Notificators
+    def init_email_notificator() -> BaseNotificator:
+        return EmailNotificator(
+            smtp_server=config.smpt_server,
+            smtp_port=config.smpt_port,
+            smtp_username=config.smpt_user,
+            smtp_password=config.smpt_password,
+        )
+
+    container.register(BaseNotificator, factory=init_email_notificator, scope=Scope.singleton)
 
     # register Repositories
     def init_postgres_database_manager() -> BaseDatabaseManager:
-        config: Config = container.resolve(Config)
         engine = create_async_engine(config.database_url, echo=True, future=True)
 
         return PostgresDatabaseManager(
@@ -91,7 +105,7 @@ def init_container() -> Container:
         )
         create_access_token_command_handler = CreateAccessTokenCommandHandler(
             _mediator=mediator,
-            config=container.resolve(Config)
+            config=config
         )
         delete_user_command_handler = DeleteUserCommandHandler(
             _mediator=mediator,
@@ -131,6 +145,12 @@ def init_container() -> Container:
         get_user_task_by_oid_query_handler = GetUserTaskByOidQueryHandler(
             task_repository=container.resolve(BaseTaskRepository),
             user_repository=container.resolve(BaseUserRepository)
+        )
+
+        # initialize handlers for events
+        # Users
+        new_user_created_event_handler = NewUserCreatedEventHandler(
+            email_notificator=container.resolve(BaseNotificator)
         )
 
         # register handlers for commands
@@ -183,6 +203,13 @@ def init_container() -> Container:
         mediator.register_query(
             GetUserTaskByOidQuery,
             get_user_task_by_oid_query_handler
+        )
+
+        # register handlers for events
+        # Users
+        mediator.register_event(
+            NewUserCreatedEvent,
+            [new_user_created_event_handler]
         )
 
         return mediator

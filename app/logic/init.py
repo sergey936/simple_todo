@@ -1,16 +1,19 @@
 from functools import lru_cache
+from uuid import uuid4
 
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from punq import Container, Scope
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
+from domain.events.tasks import NewTaskCreatedEvent, TaskCompletedEvent, TaskEditedEvent
 from domain.events.users import NewUserCreatedEvent
 from domain.services.user.password.base import BasePasswordManager
 from domain.services.user.password.password import PasswordManager
 from infra.db.manager.base import BaseDatabaseManager
 from infra.db.manager.postgre import PostgresDatabaseManager
-from infra.notificators.base import BaseNotificator
-from infra.notificators.email import EmailNotificator
+from infra.message_broker.base import BaseMessageBroker
+from infra.message_broker.kafka import KafkaMessageBroker
 from infra.repositories.tasks.base import BaseTaskRepository
 from infra.repositories.tasks.postgres import PostgresTaskRepository
 from infra.repositories.users.base import BaseUserRepository
@@ -21,16 +24,18 @@ from logic.commands.auth import (
     AuthenticateUserCommandHandler, CreateAccessTokenCommand
 )
 from logic.commands.tasks import CreateTaskCommand, CreateTaskCommandHandler, DeleteTaskCommandHandler, \
-    DeleteTaskCommand, CompleteTaskCommandHandler, CompleteTaskCommand
+    DeleteTaskCommand, CompleteTaskCommandHandler, CompleteTaskCommand, EditTaskCommandHandler, EditTaskCommand
 from logic.commands.users import (
-    CreateUserCommand, CreateUserCommandHandler, DeleteUserCommandHandler, DeleteUserCommand
+    CreateUserCommand, CreateUserCommandHandler, DeleteUserCommandHandler, DeleteUserCommand, EditUserCommandHandler,
+    EditUserCommand
 )
+from logic.events.tasks import NewTaskCreatedEventHandler, TaskCompletedEventHandler, TaskEditedEventHandler
 from logic.events.users import NewUserCreatedEventHandler
 from logic.mediator.base import Mediator
 from logic.queries.tasks import GetAllUserTasksQueryHandler, GetAllUserTasksQuery, GetUserTaskByOidQuery, \
     GetUserTaskByOidQueryHandler
 from logic.queries.users import GetUserByEmailQueryHandler, GetCurrentUserQueryHandler, GetCurrentUserQuery, \
-    GetUserByEmailQuery
+    GetUserByEmailQuery, GetUserByOidQueryHandler, GetUserByOidQuery
 from settings.config import Config
 
 
@@ -46,16 +51,18 @@ def init_container() -> Container:
     container.register(Config, instance=Config(), scope=Scope.singleton)
     config: Config = container.resolve(Config)
 
-    # register Notificators
-    def init_email_notificator() -> BaseNotificator:
-        return EmailNotificator(
-            smtp_server=config.smpt_server,
-            smtp_port=config.smpt_port,
-            smtp_username=config.smpt_user,
-            smtp_password=config.smpt_password,
+    # register Message broker
+    def init_kafka_message_broker() -> BaseMessageBroker:
+        return KafkaMessageBroker(
+            producer=AIOKafkaProducer(bootstrap_servers=config.kafka_url),
+            consumer=AIOKafkaConsumer(
+                bootstrap_servers=config.kafka_url,
+                group_id=f'users{uuid4()}',
+                metadata_max_age_ms=30000
+            )
         )
 
-    container.register(BaseNotificator, factory=init_email_notificator, scope=Scope.singleton)
+    container.register(BaseMessageBroker, factory=init_kafka_message_broker, scope=Scope.singleton)
 
     # register Repositories
     def init_postgres_database_manager() -> BaseDatabaseManager:
@@ -98,6 +105,11 @@ def init_container() -> Container:
             user_repository=container.resolve(BaseUserRepository),
             password_hasher=container.resolve(BasePasswordManager)
         )
+        edit_user_command_handler = EditUserCommandHandler(
+            _mediator=mediator,
+            user_repository=container.resolve(BaseUserRepository),
+            password_hasher=container.resolve(BasePasswordManager),
+        )
         authenticate_user_command_handler = AuthenticateUserCommandHandler(
             _mediator=mediator,
             user_repository=container.resolve(BaseUserRepository),
@@ -117,6 +129,11 @@ def init_container() -> Container:
             task_repository=container.resolve(BaseTaskRepository),
             user_repository=container.resolve(BaseUserRepository)
         )
+        edit_task_command_handler = EditTaskCommandHandler(
+            _mediator=mediator,
+            task_repository=container.resolve(BaseTaskRepository),
+            user_repository=container.resolve(BaseUserRepository),
+        )
         delete_user_task_command_handler = DeleteTaskCommandHandler(
             _mediator=mediator,
             task_repository=container.resolve(BaseTaskRepository),
@@ -134,6 +151,9 @@ def init_container() -> Container:
             user_repository=container.resolve(BaseUserRepository),
             config=container.resolve(Config)
         )
+        get_user_by_oid_query_handler = GetUserByOidQueryHandler(
+            user_repository=container.resolve(BaseUserRepository),
+        )
         get_user_by_email_query_handler = GetUserByEmailQueryHandler(
             user_repository=container.resolve(BaseUserRepository)
         )
@@ -150,7 +170,21 @@ def init_container() -> Container:
         # initialize handlers for events
         # Users
         new_user_created_event_handler = NewUserCreatedEventHandler(
-            email_notificator=container.resolve(BaseNotificator)
+            message_broker=container.resolve(BaseMessageBroker),
+            broker_topic=config.new_users_event_topic,
+        )
+        # Tasks
+        new_task_created_event_handler = NewTaskCreatedEventHandler(
+            message_broker=container.resolve(BaseMessageBroker),
+            broker_topic=config.new_task_event_topic,
+        )
+        task_edited_event_handler = TaskEditedEventHandler(
+            message_broker=container.resolve(BaseMessageBroker),
+            broker_topic=config.task_edited_event_topic,
+        )
+        task_completed_event_handler = TaskCompletedEventHandler(
+            message_broker=container.resolve(BaseMessageBroker),
+            broker_topic=config.task_completed_event_topic,
         )
 
         # register handlers for commands
@@ -158,6 +192,10 @@ def init_container() -> Container:
         mediator.register_command(
             CreateUserCommand,
             [create_user_command_handler]
+        )
+        mediator.register_command(
+            EditUserCommand,
+            [edit_user_command_handler]
         )
         mediator.register_command(
             AuthenticateUserCommand,
@@ -177,6 +215,10 @@ def init_container() -> Container:
             [create_task_command_handler]
         )
         mediator.register_command(
+            EditTaskCommand,
+            [edit_task_command_handler]
+        )
+        mediator.register_command(
             DeleteTaskCommand,
             [delete_user_task_command_handler]
         )
@@ -190,6 +232,10 @@ def init_container() -> Container:
         mediator.register_query(
             GetCurrentUserQuery,
             get_current_user_query_handler
+        )
+        mediator.register_query(
+            GetUserByOidQuery,
+            get_user_by_oid_query_handler
         )
         mediator.register_query(
             GetUserByEmailQuery,
@@ -210,6 +256,19 @@ def init_container() -> Container:
         mediator.register_event(
             NewUserCreatedEvent,
             [new_user_created_event_handler]
+        )
+        # Tasks
+        mediator.register_event(
+            NewTaskCreatedEvent,
+            [new_task_created_event_handler]
+        )
+        mediator.register_event(
+            TaskEditedEvent,
+            [task_edited_event_handler]
+        )
+        mediator.register_event(
+            TaskCompletedEvent,
+            [task_completed_event_handler]
         )
 
         return mediator

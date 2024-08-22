@@ -18,6 +18,7 @@ sqlalchemy = "^2.0.31"
 asyncpg = "^0.29.0"
 alembic = "^1.13.1"
 aiosmtplib = "^3.0.1"
+aiokafka = "^0.11.0"
 
 
 [build-system]

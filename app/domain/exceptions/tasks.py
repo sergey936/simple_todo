@@ -53,3 +53,18 @@ class EmptyImportanceException(ApplicationException):
     def message(self):
         return "Importance cannot be empty"
 
+
+@dataclass(eq=False)
+class InvalidDateException(ApplicationException):
+
+    @property
+    def message(self):
+        return "Incorrect data. You can't complete a task in the past."
+
+
+@dataclass(eq=False)
+class EmptyTimeToCompleteException(ApplicationException):
+
+    @property
+    def message(self):
+        return "Need to choose date."

@@ -6,8 +6,8 @@ from domain.services.user.password.base import BasePasswordManager
 from domain.values.users import Username, Password, Email
 from infra.repositories.converters.users.converters import convert_user_entity_to_dbmodel
 from infra.repositories.users.base import BaseUserRepository
-from logic.commands.base import BaseCommand, BaseCommandHandler
-from logic.exceptions.users import UserWithThatEmailAlreadyExists, UserNotFoundByEmailException
+from logic.commands.base import BaseCommand, BaseCommandHandler, CT, CR
+from logic.exceptions.users import UserWithThatEmailAlreadyExists, UserNotFoundByIdException
 
 
 @dataclass(frozen=True)
@@ -56,6 +56,37 @@ class DeleteUserCommandHandler(BaseCommandHandler):
         user = await self.user_repository.get_user_by_oid(user_oid=command.user_oid)
 
         if not user:
-            raise UserNotFoundByEmailException(email=user.email)
+            raise UserNotFoundByIdException(user_oid=command.user_oid)
 
         await self.user_repository.delete_user(user_oid=command.user_oid)
+
+
+@dataclass(frozen=True)
+class EditUserCommand(BaseCommand):
+    user_oid: str
+    username: str | None
+    password: str | None
+    email: str | None
+
+
+@dataclass(frozen=True)
+class EditUserCommandHandler(BaseCommandHandler[EditUserCommand, None]):
+    user_repository: BaseUserRepository
+    password_hasher: BasePasswordManager
+
+    async def handle(self, command: EditUserCommand) -> None:
+        user = await self.user_repository.get_user_by_oid(user_oid=command.user_oid)
+
+        if not user:
+            raise UserNotFoundByIdException(user_oid=command.user_oid)
+
+        password = None if command.password is None else Password(value=self.password_hasher.hash_password(command.password))
+        username = None if command.username is None else Username(value=command.username)
+        email = None if command.email is None else Email(value=command.email)
+
+        await self.user_repository.edit_user(
+            password=password,
+            username=username,
+            email=email,
+            user_oid=user.oid
+        )

@@ -29,3 +29,13 @@ class CreateUserSchema(BaseModel):
     password: str
     email: str
     username: str
+
+
+class UserEditResponseSchema(BaseModel):
+    response: str = 'User edited'
+
+
+class EditUserSchema(BaseModel):
+    name: str | None = None
+    password: str | None = None
+    email: str | None = None

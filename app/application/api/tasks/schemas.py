@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class TaskDetailSchema(BaseModel):
     title: str
     task_body: str
     importance: int
-    created_at: datetime
+    created_at: datetime.datetime
     is_completed: bool = False
 
     @classmethod
@@ -29,6 +29,7 @@ class TaskDetailSchema(BaseModel):
 class TaskCreateSchema(BaseModel):
     title: str
     task_body: str
+    time_limit: datetime.date
     importance: int = 1
 
 
@@ -44,3 +45,11 @@ class CompleteTaskSchema(BaseModel):
     response: str = 'Task completed'
 
 
+class EditTaskResponseSchema(BaseModel):
+    response: str = 'Task edited'
+
+
+class EditTaskSchema(BaseModel):
+    title: str | None = None
+    task_body: str | None = None
+    time_limit: datetime.date | None = None

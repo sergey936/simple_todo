@@ -25,9 +25,9 @@ class User(BaseEntity):
         )
         new_user.register_event(
             NewUserCreatedEvent(
-                username=new_user.username,
+                username=new_user.username.as_generic_type(),
                 user_oid=new_user.oid,
-                user_email=new_user.email
+                user_email=new_user.email.as_generic_type()
             )
         )
         return new_user

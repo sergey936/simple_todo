@@ -1,7 +1,9 @@
+import datetime
 from dataclasses import dataclass
 
 from domain.exceptions.tasks import EmptyTitleException, TitleTooLongException, EmptyTaskBodyException, \
-    TaskBodyTooLongException, InvalidImportanceException, EmptyImportanceException
+    TaskBodyTooLongException, InvalidImportanceException, EmptyImportanceException, EmptyTimeToCompleteException, \
+    InvalidDateException
 from domain.values.base import BaseValueObject
 
 
@@ -39,6 +41,19 @@ class Importance(BaseValueObject):
 
         if not 0 < int(self.value) <= 10:
             raise InvalidImportanceException(self.value)
+
+    def as_generic_type(self):
+        return int(self.value)
+
+
+@dataclass(frozen=True)
+class TimeToComplete(BaseValueObject):
+    def validate(self) -> None:
+        if not self.value and self.value != 0:
+            raise EmptyTimeToCompleteException
+
+        if self.value < 0:
+            raise InvalidDateException
 
     def as_generic_type(self):
         return int(self.value)

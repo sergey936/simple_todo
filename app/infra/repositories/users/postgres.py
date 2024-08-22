@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 
-from sqlalchemy import text, select, delete
+from sqlalchemy import text, select, delete, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from domain.entities.users import User
+from domain.values.users import Password, Username, Email
 from infra.db.manager.base import BaseDatabaseManager
 from infra.db.models.user import Users
 from infra.repositories.converters.users.converters import convert_user_entity_to_dbmodel, \
@@ -71,5 +72,24 @@ class PostgresUserRepository(BaseUserRepository):
 
         async with session.begin() as session:
             query = delete(Users).where(Users.id == user_oid)
+            await session.execute(query)
+            await session.commit()
+
+    async def edit_user(
+            self,
+            password: Password,
+            username: Username,
+            email: Email,
+            user_oid: str
+    ):
+        session = await self.get_session
+
+        async with session.begin() as session:
+            query = update(Users).where(Users.id == user_oid).values(
+                password=Users.password if password is None else password.as_generic_type(),
+                name=Users.name if username is None else username.as_generic_type(),
+                email=Users.email if email is None else email.as_generic_type()
+            )
+
             await session.execute(query)
             await session.commit()

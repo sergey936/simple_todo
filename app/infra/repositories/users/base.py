@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from domain.entities.users import User
+from domain.values.users import Password, Username, Email
 
 
 @dataclass
@@ -25,4 +26,14 @@ class BaseUserRepository(ABC):
 
     @abstractmethod
     async def delete_user(self, user_oid: str) -> None:
+        ...
+
+    @abstractmethod
+    async def edit_user(
+            self,
+            password: Password,
+            username: Username,
+            email: Email,
+            user_oid: str
+    ):
         ...

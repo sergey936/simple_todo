@@ -6,8 +6,8 @@ from jwt import InvalidTokenError
 
 from domain.entities.users import User
 from infra.repositories.users.base import BaseUserRepository
-from logic.exceptions.users import UserNotFoundByEmailException
-from logic.queries.base import BaseQuery, BaseQueryHandler
+from logic.exceptions.users import UserNotFoundByEmailException, UserNotFoundByIdException
+from logic.queries.base import BaseQuery, BaseQueryHandler, QT, QR
 from settings.config import Config
 
 
@@ -59,5 +59,23 @@ class GetUserByEmailQueryHandler(BaseQueryHandler):
 
         if not user:
             raise UserNotFoundByEmailException(email=user.email)
+
+        return user
+
+
+@dataclass(frozen=True)
+class GetUserByOidQuery(BaseQuery):
+    user_oid: str
+
+
+@dataclass(frozen=True)
+class GetUserByOidQueryHandler(BaseQueryHandler[GetUserByOidQuery, User]):
+    user_repository: BaseUserRepository
+
+    async def handle(self, query: GetUserByOidQuery) -> User:
+        user = await self.user_repository.get_user_by_oid(user_oid=query.user_oid)
+
+        if not user:
+            raise UserNotFoundByIdException(user_oid=query.user_oid)
 
         return user

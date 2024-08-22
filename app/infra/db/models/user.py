@@ -13,10 +13,10 @@ class Users(Base):
 
     id: Mapped[str] = mapped_column(primary_key=True)
 
-    name: Mapped[str] = mapped_column(String(30))
-    email: Mapped[str] = mapped_column(String(256))
-    password: Mapped[str] = mapped_column(String())
+    name: Mapped[str] = mapped_column(String(30), nullable=False)
+    email: Mapped[str] = mapped_column(String(256), nullable=False)
+    password: Mapped[str] = mapped_column(String(), nullable=False)
 
-    created_at: Mapped[datetime.datetime] = mapped_column()
+    created_at: Mapped[datetime.datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
 
     task: Mapped[List["Tasks"]] = relationship("Tasks", back_populates="user")

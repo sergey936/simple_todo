@@ -14,6 +14,13 @@ class Config(BaseSettings):
     smpt_user: str = Field(default='', alias="SMPT_USER")
     smpt_password: str = Field(default='', alias="SMPT_PASS")
 
+    new_users_event_topic: str = Field(default='', alias='NEW_USER_EVENT_TOPIC')
+    new_task_event_topic: str = Field(default='', alias='NEW_TASK_EVENT_TOPIC')
+    task_completed_event_topic: str = Field(default='', alias='TASK_COMPLETE_EVENT_TOPIC')
+    task_edited_event_topic: str = Field(default='', alias='TASK_EDIT_EVENT_TOPIC')
+
+    kafka_url: str = Field(alias='KAFKA_URL')
+
     class Config:
         env_file = ".env"
 

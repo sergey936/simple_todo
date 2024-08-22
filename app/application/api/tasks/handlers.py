@@ -3,12 +3,12 @@ from punq import Container
 
 from application.api.tasks.filters import GetTasksFilters
 from application.api.tasks.schemas import TaskDetailSchema, TaskCreateSchema, GetTasksQueryResponseSchema, \
-    DeleteTaskSchema, CompleteTaskSchema
+    DeleteTaskSchema, CompleteTaskSchema, EditTaskResponseSchema, EditTaskSchema
 from application.api.users.schemas import ErrorSchema
 from domain.entities.users import User
 from domain.exceptions.base import ApplicationException
 from infra.services.user.auth.current_user import get_current_user
-from logic.commands.tasks import CreateTaskCommand, DeleteTaskCommand, CompleteTaskCommand
+from logic.commands.tasks import CreateTaskCommand, DeleteTaskCommand, CompleteTaskCommand, EditTaskCommand
 from logic.init import get_container
 from logic.mediator.base import Mediator
 from logic.queries.tasks import GetAllUserTasksQuery, GetUserTaskByOidQuery
@@ -26,7 +26,7 @@ router = APIRouter(tags=['task'])
         status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema}
     }
 )
-async def create_task(
+async def create_task_handler(
         task_schema: TaskCreateSchema,
         container: Container = Depends(get_container),
         current_user: User = Depends(get_current_user)
@@ -38,6 +38,7 @@ async def create_task(
             CreateTaskCommand(
                 title=task_schema.title,
                 task_body=task_schema.task_body,
+                time_limit=task_schema.time_limit,
                 importance=task_schema.importance,
                 user_oid=current_user.oid
             )
@@ -58,7 +59,7 @@ async def create_task(
         status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema}
     }
 )
-async def get_all_user_tasks(
+async def get_all_user_tasks_handler(
         filters: GetTasksFilters = Depends(),
         container: Container = Depends(get_container),
         current_user: User = Depends(get_current_user)
@@ -94,7 +95,7 @@ async def get_all_user_tasks(
         status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema}
     }
 )
-async def get_user_task_by_oid(
+async def get_user_task_by_oid_handler(
         task_oid: str,
         container: Container = Depends(get_container),
         current_user: User = Depends(get_current_user)
@@ -125,7 +126,7 @@ async def get_user_task_by_oid(
         status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema}
     }
 )
-async def delete_user_task(
+async def delete_user_task_handler(
         task_oid: str,
         container: Container = Depends(get_container),
         current_user: User = Depends(get_current_user)
@@ -147,7 +148,7 @@ async def delete_user_task(
 
 
 @router.put(
-    '/make-complete/{task_oid}',
+    '/{task_oid}/make-complete',
     response_model=CompleteTaskSchema,
     status_code=status.HTTP_200_OK,
     description='Complete user task by task_oid',
@@ -156,7 +157,7 @@ async def delete_user_task(
         status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema}
     }
 )
-async def complete_user_task(
+async def complete_user_task_handler(
         task_oid: str,
         container: Container = Depends(get_container),
         current_user: User = Depends(get_current_user)
@@ -175,3 +176,37 @@ async def complete_user_task(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={'error': error.message})
 
     return CompleteTaskSchema
+
+
+@router.put(
+    '/{task_oid}/edit',
+    response_model=EditTaskResponseSchema,
+    status_code=status.HTTP_200_OK,
+    description='Edit task',
+    responses={
+        status.HTTP_200_OK: {'model': EditTaskResponseSchema},
+        status.HTTP_400_BAD_REQUEST: {'model': ErrorSchema}
+    }
+)
+async def edit_user_task_handler(
+        task_oid: str,
+        schema: EditTaskSchema,
+        container: Container = Depends(get_container),
+        current_user: User = Depends(get_current_user)
+) -> EditTaskResponseSchema:
+    mediator: Mediator = container.resolve(Mediator)
+
+    try:
+        await mediator.handle_command(
+            EditTaskCommand(
+                task_oid=task_oid,
+                user_oid=current_user.oid,
+                title=schema.title,
+                task_body=schema.task_body,
+                time_limit=schema.time_limit
+            )
+        )
+    except ApplicationException as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={'error': error.message})
+
+    return EditTaskResponseSchema

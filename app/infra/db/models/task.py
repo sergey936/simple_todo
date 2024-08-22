@@ -11,12 +11,13 @@ class Tasks(Base):
 
     id: Mapped[str] = mapped_column(primary_key=True)
 
-    title: Mapped[str] = mapped_column(String(80))
-    task_body: Mapped[str] = mapped_column(String())
-    importance: Mapped[int] = mapped_column(Integer())
+    title: Mapped[str] = mapped_column(String(80), nullable=False)
+    task_body: Mapped[str] = mapped_column(String(), nullable=False)
+    importance: Mapped[int] = mapped_column(Integer(), nullable=False)
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("Users.id"))
+    user_id: Mapped[str] = mapped_column(ForeignKey("Users.id"), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=text("TIMEZONE('utc', now())"))
-    is_completed: Mapped[bool] = mapped_column(Boolean())
+    is_completed: Mapped[bool] = mapped_column(Boolean(), nullable=False)
+    time_to_complete: Mapped[int] = mapped_column(Integer(), nullable=False)
 
     user: Mapped["Users"] = relationship("Users", back_populates="task")

@@ -4,6 +4,7 @@ from typing import Iterable
 
 from application.api.tasks.filters import GetTasksFilters
 from domain.entities.tasks import Task
+from domain.values.tasks import Title, TaskBody, TimeToComplete
 
 
 @dataclass
@@ -26,4 +27,15 @@ class BaseTaskRepository(ABC):
 
     @abstractmethod
     async def complete_user_task(self, task_oid: str, user_oid: str) -> None:
+        ...
+
+    @abstractmethod
+    async def edit_task(
+            self,
+            task_oid: str,
+            user_oid: str,
+            title: Title,
+            task_body: TaskBody,
+            time_to_complete: TimeToComplete,
+    ):
         ...

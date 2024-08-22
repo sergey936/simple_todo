@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from application.api.tasks.filters import GetTasksFilters
 from domain.entities.tasks import Task
+from domain.values.tasks import Title, TaskBody, TimeToComplete
 from infra.db.manager.base import BaseDatabaseManager
 from infra.db.models.task import Tasks
 from infra.repositories.converters.tasks.converters import convert_task_db_model_to_entity
@@ -42,6 +43,7 @@ class PostgresTaskRepository(BaseTaskRepository):
                 title=task.title.as_generic_type(),
                 task_body=task.task_body.as_generic_type(),
                 importance=task.importance.as_generic_type(),
+                time_to_complete=task.time_to_complete.as_generic_type(),
                 user_id=task.user_oid,
                 created_at=task.created_at,
                 is_completed=task.is_completed
@@ -76,6 +78,25 @@ class PostgresTaskRepository(BaseTaskRepository):
 
         async with session.begin() as session:
             query = update(Tasks).where(Tasks.id == task_oid, Tasks.user_id == user_oid).values(is_completed=True)
+            await session.execute(query)
+            await session.commit()
+
+    async def edit_task(
+            self,
+            task_oid: str,
+            user_oid: str,
+            title: Title | None,
+            task_body: TaskBody | None,
+            time_to_complete: TimeToComplete | None,
+    ):
+        session = await self.get_session
+
+        async with session.begin() as session:
+            query = update(Tasks).where(Tasks.id == task_oid, Tasks.user_id == user_oid).values(
+                title=Tasks.title if title is None else title.as_generic_type(),
+                task_body=Tasks.task_body if task_body is None else task_body.as_generic_type(),
+                time_to_complete=Tasks.time_to_complete if time_to_complete is None else time_to_complete.as_generic_type()
+            )
             await session.execute(query)
             await session.commit()
 
